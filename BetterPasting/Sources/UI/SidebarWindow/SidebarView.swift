@@ -34,7 +34,7 @@ struct SidebarView: View {
                         }
                     }
                     .padding(.horizontal, 12)
-                    .padding(.top, 24)
+                    .padding(.top, 36)
                     .padding(.bottom, 12)
                 }
                 .scrollIndicators(.never)
