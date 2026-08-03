@@ -61,3 +61,6 @@ Thumbs.db
 !default.mode2v3
 *.perspectivev3
 !default.perspectivev3
+
+# Claude Code local settings
+.claude/settings.local.json

@@ -14,6 +14,11 @@ struct SidebarView: View {
             ScrollViewReader { proxy in
                 ScrollView {
                     LazyVStack(spacing: 8) {
+                        // Invisible anchor for reliable scroll-to-top
+                        Color.clear
+                            .frame(height: 0)
+                            .id("scrollTop")
+
                         ForEach(Array(appState.filteredItems.enumerated()), id: \.element.id) { index, item in
                             ClipboardRowView(
                                 item: item,
@@ -43,6 +48,10 @@ struct SidebarView: View {
                     // Force hide scrollbars at AppKit level
                     DispatchQueue.main.async {
                         hideScrollIndicators()
+                    }
+                    // Ensure we start at the top
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+                        proxy.scrollTo("scrollTop", anchor: .top)
                     }
                 }
                 .onChange(of: appState.selectedIndex) { _, _ in
@@ -98,10 +107,9 @@ struct SidebarView: View {
     }
 
     private func scrollToTop() {
-        guard let firstItem = appState.filteredItems.first else { return }
         appState.selectedIndex = 0
         withAnimation(.easeOut(duration: 0.3)) {
-            scrollProxy?.scrollTo(firstItem.id, anchor: .top)
+            scrollProxy?.scrollTo("scrollTop", anchor: .top)
         }
     }
 
@@ -160,7 +168,7 @@ struct SidebarView: View {
                 Spacer()
                 hintGroup(icon: "arrow.left.square", keys: ["←"], label: "Copy")
                 Spacer()
-                hintGroup(icon: "magnifyingglass", keys: ["↵"], label: "Search")
+                hintGroup(icon: "magnifyingglass", keys: ["A-Z"], label: "Search")
                 Spacer()
                 hintGroup(icon: nil, keys: ["esc"], label: "Close")
             }

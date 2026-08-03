@@ -62,7 +62,22 @@ enum ContentExtractor {
         }
 
         // 4. HTML
+        // When Safari copies a URL, it puts both HTML (e.g. <a href="url">page title</a>)
+        // and plain text (the actual URL) on the pasteboard. If the plain text looks like
+        // a URL, prefer it over the HTML so the URL is displayed instead of the page title.
         if let html = pasteboard.string(forType: .html), !html.isEmpty {
+            if let text = pasteboard.string(forType: .string), !text.isEmpty, looksLikeURL(text) {
+                let hash = computeHash(text)
+                return ExtractedContent(
+                    contentType: .text,
+                    textContent: text,
+                    imageData: nil,
+                    filePaths: nil,
+                    rtfData: nil,
+                    htmlContent: nil,
+                    contentHash: hash
+                )
+            }
             let hash = computeHash(html)
             return ExtractedContent(
                 contentType: .html,
@@ -112,6 +127,12 @@ enum ContentExtractor {
         }
 
         return nil
+    }
+
+    private static func looksLikeURL(_ text: String) -> Bool {
+        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.contains(" "), !trimmed.contains("\n") else { return false }
+        return trimmed.hasPrefix("http://") || trimmed.hasPrefix("https://")
     }
 
     private static func computeHash(_ string: String) -> String {

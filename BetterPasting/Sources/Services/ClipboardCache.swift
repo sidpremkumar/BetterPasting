@@ -6,12 +6,14 @@ final class ClipboardCache: @unchecked Sendable {
 
     private var cache: [ClipboardItem] = []
     private let lock = NSLock()
-    private let maxCacheSize = 100
+    private let maxCacheSize = 500
 
     private init() {}
 
-    /// Lock-free read for UI display
+    /// Thread-safe read for UI display
     func getCachedItems() -> [ClipboardItem] {
+        lock.lock()
+        defer { lock.unlock() }
         return cache
     }
 

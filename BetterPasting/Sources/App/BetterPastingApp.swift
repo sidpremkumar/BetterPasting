@@ -29,6 +29,16 @@ struct MenuBarView: View {
 
             Divider()
 
+            Toggle("Show Link Previews", isOn: Binding(
+                get: { appState.preferences.enableLinkPreviews },
+                set: { newValue in
+                    appState.preferences.enableLinkPreviews = newValue
+                    appState.preferences.save()
+                }
+            ))
+
+            Divider()
+
             Button("Clear History") {
                 clearHistory()
             }
@@ -42,10 +52,14 @@ struct MenuBarView: View {
     }
 
     private func clearHistory() {
-        // Keep pinned items
-        let pinnedItems = appState.clipboardItems.filter { $0.isPinned }
-        appState.clipboardItems = pinnedItems
+        // Delete all unpinned items from the database first
+        ClipboardStore.shared.deleteUnpinned()
+
+        // Reload cache from the now-cleaned database (only pinned items remain)
         ClipboardCache.shared.clear()
         ClipboardCache.shared.loadFromStore()
+
+        // Sync UI state from the authoritative cache
+        appState.clipboardItems = ClipboardCache.shared.getCachedItems()
     }
 }

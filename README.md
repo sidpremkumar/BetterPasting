@@ -5,11 +5,11 @@
 <h1 align="center">BetterPasting</h1>
 
 <p align="center">
-  <strong>A fast, keyboard-driven clipboard history manager for macOS with fuzzy search and multi-format support.</strong>
+  <strong>A fast, keyboard-driven clipboard history manager for macOS with fuzzy search, link previews, and multi-format support.</strong>
 </p>
 
 <p align="center">
-  <img src="assets/better-pasting-demo.gif" alt="BetterPasting Demo" width="600">
+  <img src="assets/demo.png" alt="BetterPasting sidebar showing clipboard history with a link preview card" width="600">
 </p>
 
 ---
@@ -18,6 +18,7 @@
 
 - **Clipboard history** — Access your past copies instantly
 - **Fuzzy search** — Type to filter clipboard items
+- **Link previews** — Copied URLs unfurl into rich cards (Open Graph / Twitter card metadata)
 - **Multi-format support** — Text, images, files, RTF, and HTML
 - **Liquid Glass UI** — Native macOS 26 glass effect
 - **Pin items** — Keep important clips at the top
@@ -26,11 +27,11 @@
 ## Installation
 
 ### Download
-Grab the latest release from [Releases](https://github.com/user/BetterPasting/releases).
+Grab the latest release from [Releases](https://github.com/sidpremkumar/BetterPasting/releases).
 
 ### Build from source
 ```bash
-git clone https://github.com/user/BetterPasting.git
+git clone https://github.com/sidpremkumar/BetterPasting.git
 cd BetterPasting
 ./build-app.sh
 ```
@@ -72,8 +73,9 @@ BetterPasting/
 │   │   │   ├── KeyboardEventTap.swift    # CGEventTap for global shortcuts
 │   │   │   └── ModifierKeyTracker.swift  # Modifier key state
 │   │   ├── Storage/
-│   │   │   ├── ClipboardStore.swift      # Persistent storage
+│   │   │   ├── ClipboardStore.swift      # Persistent storage (SQLite)
 │   │   │   ├── ImageCache.swift          # Image file caching
+│   │   │   ├── LinkPreviewCache.swift    # Downscaled preview images & favicons
 │   │   │   └── CleanupManager.swift      # Cache cleanup
 │   │   └── Permissions/
 │   │       └── PermissionManager.swift   # Permission checks
@@ -81,12 +83,15 @@ BetterPasting/
 │   ├── Services/
 │   │   ├── ClipboardCache.swift      # Lock-free caching layer
 │   │   ├── FuzzyMatcher.swift        # Search scoring
+│   │   ├── LinkPreviewService.swift  # URL unfurling (memory → SQLite → network)
+│   │   ├── HTMLMetadataParser.swift  # Open Graph / Twitter card parsing
 │   │   ├── SourceAppTracker.swift    # Track copy source
 │   │   └── QuickLookManager.swift    # Preview generation
 │   │
 │   ├── Models/
 │   │   ├── ClipboardItem.swift       # Item representation
 │   │   ├── ContentType.swift         # Content type enum
+│   │   ├── LinkPreview.swift         # Unfurled URL metadata
 │   │   └── UserPreferences.swift     # Settings persistence
 │   │
 │   └── UI/
@@ -97,6 +102,7 @@ BetterPasting/
 │       └── Components/
 │           ├── GlassBackground.swift     # macOS glass effect
 │           ├── ClipboardRowView.swift    # Item row
+│           ├── LinkPreviewCard.swift     # Rich URL preview card
 │           ├── ContentPreview.swift      # Content preview
 │           ├── SearchBarView.swift       # Search input
 │           └── KeyCap.swift              # Keyboard hint styling
@@ -113,6 +119,8 @@ BetterPasting/
 **SidebarPanel** — `NSPanel` subclass that slides in from the right. Stays on top, doesn't steal focus.
 
 **FuzzyMatcher** — Scores matches by consecutive character bonuses and position weighting.
+
+**LinkPreviewService** — Unfurls copied URLs into rich cards. Three cache layers (memory → SQLite → network) with coalesced, size-capped fetches; local and private hosts are never fetched.
 
 ### Data Flow
 
@@ -142,9 +150,9 @@ ClipboardCache + ClipboardStore
 
 ## Requirements
 
-- macOS 15+
-- Swift 5.9+
+- macOS 26 (Tahoe) or later
+- Swift 6.2+ (to build from source)
 
 ## License
 
-MIT
+[MIT](LICENSE)

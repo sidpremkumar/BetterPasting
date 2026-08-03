@@ -14,6 +14,7 @@ enum ShortcutEvent {
     case forceHidePanel    // CMD+Tab - always close panel immediately
     case commandStateChanged(Bool)  // CMD pressed/released
     case activateSearch    // Enter when search not active
+    case typeToSearch(String) // User typed a character to start searching
 }
 
 final class KeyboardEventTap {
@@ -219,9 +220,40 @@ final class KeyboardEventTap {
                 onShortcutTriggered.send(.dismiss)
                 return nil
             }
+
+            // Type-to-search: any printable character when search is not active
+            if !searchActive && !modifierTracker.isCommandPressed && isPrintableKeyCode(keyCode) {
+                var length = 0
+                var chars = [UniChar](repeating: 0, count: 4)
+                event.keyboardGetUnicodeString(maxStringLength: 4, actualStringLength: &length, unicodeString: &chars)
+                if length > 0 {
+                    let typed = String(utf16CodeUnits: chars, count: length)
+                    let printable = typed.filter { !$0.isNewline }
+                    if !printable.isEmpty {
+                        print("[KeyboardEventTap] Type-to-search: '\(printable)'")
+                        onShortcutTriggered.send(.typeToSearch(printable))
+                        return nil
+                    }
+                }
+            }
         }
 
         return Unmanaged.passUnretained(event)
+    }
+
+    /// Check if a key code corresponds to a printable character (not a modifier/function key)
+    private func isPrintableKeyCode(_ keyCode: UInt16) -> Bool {
+        // Exclude function keys, modifiers, arrows, etc.
+        let nonPrintable: Set<UInt16> = [
+            UInt16(kVK_Return), UInt16(kVK_Tab), UInt16(kVK_Delete), UInt16(kVK_Escape),
+            UInt16(kVK_ForwardDelete),
+            UInt16(kVK_UpArrow), UInt16(kVK_DownArrow), UInt16(kVK_LeftArrow), UInt16(kVK_RightArrow),
+            UInt16(kVK_F1), UInt16(kVK_F2), UInt16(kVK_F3), UInt16(kVK_F4),
+            UInt16(kVK_F5), UInt16(kVK_F6), UInt16(kVK_F7), UInt16(kVK_F8),
+            UInt16(kVK_F9), UInt16(kVK_F10), UInt16(kVK_F11), UInt16(kVK_F12),
+            UInt16(kVK_Home), UInt16(kVK_End), UInt16(kVK_PageUp), UInt16(kVK_PageDown),
+        ]
+        return !nonPrintable.contains(keyCode)
     }
 
     private func keyCodeToQuickCopyIndex(_ keyCode: UInt16) -> Int? {

@@ -110,6 +110,15 @@ struct ClipboardRowView: View {
                 Label("Copy", systemImage: "doc.on.doc")
             }
 
+            if let url = item.detectedURL {
+                Button {
+                    NSWorkspace.shared.open(url)
+                    NotificationCenter.default.post(name: .dismissSidebar, object: nil)
+                } label: {
+                    Label("Open Link", systemImage: "safari")
+                }
+            }
+
             if item.contentType == .text || item.contentType == .rtf || item.contentType == .html {
                 Divider()
 
@@ -415,11 +424,15 @@ struct ContentPreviewLarge: View {
     var body: some View {
         switch item.contentType {
         case .text, .rtf, .html:
-            Text(item.displayPreview)
-                .font(.system(size: 14))
-                .foregroundStyle(.primary)
-                .lineLimit(3)
-                .frame(maxWidth: .infinity, alignment: .leading)
+            if let url = item.detectedURL {
+                LinkPreviewCard(url: url, fallbackText: item.displayPreview)
+            } else {
+                Text(item.displayPreview)
+                    .font(.system(size: 14))
+                    .foregroundStyle(.primary)
+                    .lineLimit(3)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
 
         case .image:
             HStack(spacing: 12) {

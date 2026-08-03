@@ -93,12 +93,29 @@ final class AppState: ObservableObject {
     // MARK: - Item Management
 
     func addItem(_ item: ClipboardItem) {
-        // Insert at front
-        clipboardItems.insert(item, at: 0)
+        // Deduplicate: if an item with the same content hash already exists,
+        // remove it first so we don't show duplicates in the UI
+        if let existingIndex = clipboardItems.firstIndex(where: { $0.contentHash == item.contentHash }) {
+            let existing = clipboardItems.remove(at: existingIndex)
+            // Preserve pinned status from the existing item
+            var deduplicatedItem = item
+            deduplicatedItem.isPinned = existing.isPinned
+            clipboardItems.insert(deduplicatedItem, at: 0)
+        } else {
+            clipboardItems.insert(item, at: 0)
+        }
+
+        // Re-sort to respect pinned items
+        clipboardItems.sort { lhs, rhs in
+            if lhs.isPinned != rhs.isPinned {
+                return lhs.isPinned
+            }
+            return lhs.createdAt > rhs.createdAt
+        }
 
         // Keep list bounded
-        if clipboardItems.count > 100 {
-            clipboardItems = Array(clipboardItems.prefix(100))
+        if clipboardItems.count > 500 {
+            clipboardItems = Array(clipboardItems.prefix(500))
         }
     }
 

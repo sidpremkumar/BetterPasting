@@ -1,10 +1,18 @@
 import AppKit
 import Combine
 
+/// Payload published when a new clipboard item is detected.
+/// Bundles the item metadata with any captured image data so downstream
+/// consumers don't need to re-read the (potentially changed) pasteboard.
+struct ClipboardCapture: Sendable {
+    let item: ClipboardItem
+    let imageData: Data?
+}
+
 final class ClipboardMonitor: @unchecked Sendable {
     static let shared = ClipboardMonitor()
 
-    let onNewItem = PassthroughSubject<ClipboardItem, Never>()
+    let onNewItem = PassthroughSubject<ClipboardCapture, Never>()
 
     private var lastChangeCount = 0
     private var timer: Timer?
@@ -75,7 +83,10 @@ final class ClipboardMonitor: @unchecked Sendable {
             isPinned: false
         )
 
+        // Bundle item with image data captured NOW (before the pasteboard can change)
+        let capture = ClipboardCapture(item: item, imageData: content.imageData)
+
         print("[ClipboardMonitor] New item: \(content.contentType) from \(sourceApp.name ?? "unknown")")
-        onNewItem.send(item)
+        onNewItem.send(capture)
     }
 }

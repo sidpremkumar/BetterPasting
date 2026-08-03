@@ -10,6 +10,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // Set as accessory app (no dock icon)
         NSApp.setActivationPolicy(.accessory)
 
+        if DemoScreenshot.runIfRequested() { return }
+
         // Request permissions
         Task {
             await PermissionManager.shared.requestPermissions()
@@ -22,11 +24,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // Start clipboard monitoring
         ClipboardMonitor.shared.startMonitoring()
 
-        // Subscribe to new clipboard items
+        // Subscribe to new clipboard captures
         ClipboardMonitor.shared.onNewItem
             .receive(on: DispatchQueue.main)
-            .sink { [weak self] item in
-                self?.handleNewClipboardItem(item)
+            .sink { [weak self] capture in
+                self?.handleNewClipboardCapture(capture)
             }
             .store(in: &cancellables)
 
@@ -35,8 +37,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         // Start periodic cleanup
         CleanupManager.shared.startPeriodicCleanup()
-
-        print("[AppDelegate] Application launched")
     }
 
     func applicationWillTerminate(_ notification: Notification) {
@@ -118,32 +118,37 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         case .activateSearch:
             AppState.shared.isSearchActive = true
+
+        case .typeToSearch(let characters):
+            // Activate search and seed it with the typed character
+            AppState.shared.isSearchActive = true
+            AppState.shared.searchQuery += characters
         }
     }
 
     // MARK: - Clipboard Item Handling
 
-    private func handleNewClipboardItem(_ item: ClipboardItem) {
-        var savedItem = item
+    private func handleNewClipboardCapture(_ capture: ClipboardCapture) {
+        var savedItem = capture.item
 
-        // Save image to cache if needed
-        if item.contentType == .image,
-           let content = ContentExtractor.extract(from: NSPasteboard.general),
-           let imageData = content.imageData {
-            if let path = ImageCache.shared.saveImage(imageData, id: item.id) {
+        // Save image to cache if needed — uses image data captured at detection time
+        // to avoid race conditions from re-reading a potentially changed pasteboard
+        if capture.item.contentType == .image,
+           let imageData = capture.imageData {
+            if let path = ImageCache.shared.saveImage(imageData, id: capture.item.id) {
                 savedItem = ClipboardItem(
-                    id: item.id,
-                    contentHash: item.contentHash,
-                    contentType: item.contentType,
-                    textContent: item.textContent,
+                    id: capture.item.id,
+                    contentHash: capture.item.contentHash,
+                    contentType: capture.item.contentType,
+                    textContent: capture.item.textContent,
                     imagePath: path,
-                    filePaths: item.filePaths,
-                    rtfData: item.rtfData,
-                    htmlContent: item.htmlContent,
-                    sourceBundleID: item.sourceBundleID,
-                    sourceAppName: item.sourceAppName,
-                    createdAt: item.createdAt,
-                    isPinned: item.isPinned
+                    filePaths: capture.item.filePaths,
+                    rtfData: capture.item.rtfData,
+                    htmlContent: capture.item.htmlContent,
+                    sourceBundleID: capture.item.sourceBundleID,
+                    sourceAppName: capture.item.sourceAppName,
+                    createdAt: capture.item.createdAt,
+                    isPinned: capture.item.isPinned
                 )
             }
         }
