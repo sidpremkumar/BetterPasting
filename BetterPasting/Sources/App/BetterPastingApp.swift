@@ -3,10 +3,15 @@ import SwiftUI
 @main
 struct BetterPastingApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
+    @StateObject private var appState = AppState.shared
 
     var body: some Scene {
-        MenuBarExtra("BetterPasting", systemImage: "doc.on.clipboard") {
+        MenuBarExtra {
             MenuBarView()
+        } label: {
+            Image(systemName: appState.secureInputHolderName == nil
+                  ? "doc.on.clipboard"
+                  : "exclamationmark.triangle")
         }
     }
 }
@@ -16,6 +21,14 @@ struct MenuBarView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
+            if let holder = appState.secureInputHolderName {
+                Text("⚠️ Hotkey disabled — Secure Keyboard Entry held by \(holder)")
+                    .font(.caption)
+                    .foregroundStyle(.orange)
+
+                Divider()
+            }
+
             Button("Show Clipboard History") {
                 SidebarPanelManager.shared.show()
             }

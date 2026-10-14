@@ -18,6 +18,9 @@ final class AppState: ObservableObject {
     @Published var isCommandHeld = false  // For showing quick copy hints
     @Published var isSearchActive = false  // For showing/hiding search bar
 
+    /// Name of the app holding Secure Keyboard Entry (blocks the global hotkey), nil when clear
+    @Published var secureInputHolderName: String?
+
     // MARK: - Debounced Search
 
     @Published private var debouncedSearchQuery = ""

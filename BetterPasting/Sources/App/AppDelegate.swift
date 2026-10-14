@@ -35,6 +35,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // Setup event tap for global hotkeys
         setupEventTap()
 
+        // Warn when Secure Keyboard Entry blocks the hotkey's event tap
+        SecureInputMonitor.shared.startMonitoring()
+
         // Start periodic cleanup
         CleanupManager.shared.startPeriodicCleanup()
     }
@@ -42,6 +45,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationWillTerminate(_ notification: Notification) {
         ClipboardMonitor.shared.stopMonitoring()
         CleanupManager.shared.stopPeriodicCleanup()
+        SecureInputMonitor.shared.stopMonitoring()
         eventTap?.disable()
         print("[AppDelegate] Application terminating")
     }
