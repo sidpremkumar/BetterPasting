@@ -57,6 +57,18 @@ struct SidebarView: View {
                 .onChange(of: appState.selectedIndex) { _, _ in
                     resetInactivityTimer()
                 }
+                .onChange(of: appState.isVisible) { _, isVisible in
+                    if isVisible {
+                        // Panel is reused across shows, so onAppear won't re-fire;
+                        // jump back to the top every time it opens
+                        proxy.scrollTo("scrollTop", anchor: .top)
+                        resetInactivityTimer()
+                    } else {
+                        inactivityTimer?.invalidate()
+                        inactivityTimer = nil
+                        proxy.scrollTo("scrollTop", anchor: .top)
+                    }
+                }
             }
 
             // Bottom section with hints and search bar
